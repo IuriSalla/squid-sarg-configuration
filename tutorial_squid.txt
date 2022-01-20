@@ -1,0 +1,65 @@
+#################################################
+## AS CONFIGURAÇÕES ABAIXO SERVEM NO UBUNTU 18 ##
+#################################################
+
+# OS ARQUIVOS DE CONFIGURAÇÃO DO SQUID NAS PASTAS
+# FORA DESTE ARQUIVO SERVEM PARA O DEBIAN 9
+
+# CONFIGURANDO SQUID AO LADO DO DHCP
+apt-get install squid
+
+# CONFIGURANDO SQUID PROXY SERVER
+nano /etc/squid/squid.conf
+http_port 1234 transparent
+http_access allow all
+
+systemctl restart squid
+
+# CRIANDO AS ACLs - CONTROLE DE ACESSO
+acl localnet src 192.168.0.15
+acl localnet src 192.168.0.15 # test computer
+
+# ESPECIFICANDO O RANGE DE IP
+acl localnet src 192.168.0.15/30
+
+# ESPECIFICANDO UMA PORTA ABERTA EM ESPECIFICO
+acl Safe_ports port 123 # Custom port
+
+# CONFIGURANDO AUTENTICAÇÃO DO PROXY (PROXY NO NAVEGADOR)
+# OU ATÉ MESMO O htpasswd
+apt-get install apache2-utils
+
+# CRIANDO ARQUIVO ONDE SERÁ ARMAZENADA AS SENHAS
+# E ATRIBUINDO A RELAÇÃO AO PROXY
+touch /etc/squid/passwd
+chown proxy: etc/squid/passwd
+
+# CRIANDO USÁRIOS
+htpasswd /etc/squid/passwd newuser
+
+# EDITE O /etc/squid/squid.conf PARA PASSAR A IDENTIFICAR O USUÁRIO CRIADO COMO PARAMETRO
+auth_param basic program /usr/lib64/squid/basic_ncsa_auth /etc/squid/passwd
+auth_param basic children 5
+auth_param basic realm Squid Basic Authentication
+auth_param basic credentialsttl 2 hours
+acl auth_users proxy_auth REQUIRED
+http_access allow auth_users
+
+# CRIANDO AS LISTAS DE BLOQUEIOS
+nano /etc/squid/blocked.acl
+
+# ADICIONANDO SITES AO BLOQUEIO
+.facebook.com
+.twitter.com
+
+# ADICIONANDO A ACL PARA BLOQUEAR OS SITES LISTADOS ACIMA
+nano /etc/squid/squid.conf
+acl blocked_websites dstdomain “/etc/squid/blocked.acl”
+http_access deny blocked_websites
+
+# HABILITANDO SERVIÇOS DO SQUID NA SEGUINTE ORDEM
+sudo systemctl status squid
+sudo systemctl start squid
+sudo systemctl enable squid
+
+
